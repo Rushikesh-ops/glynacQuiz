@@ -6,6 +6,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         model = Employee
         fields = '__all__'
 
+
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
@@ -27,4 +28,4 @@ class ProjectAssignmentSerializer(serializers.ModelSerializer):
 class SalaryHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SalaryHistory
-        fields = '__all__'  #
+        fields = '__all__'  
