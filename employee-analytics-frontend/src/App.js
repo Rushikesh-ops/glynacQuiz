@@ -1,16 +1,17 @@
 import logo from './logo.svg';
 import './App.css';
-import EmployeeSummary from './components/EmployeeSummary';
-import DepartmentChart from './components/DepartmentChart';
+// import EmployeeSummary from './components/EmployeeSummary';
+// import DepartmentChart from './components/DepartmentChart';
+import PerformanceSummaryChart from './components/PerformanceSummaryChart';
+import EmployeeSalaryChart from './components/EmployeeSummary';
+import DepartmentCountChart from './components/DepartmentChart';
 
 function App() {
   return (
     <div className="App">
-    <div className="App">
-      <h1>Employee Analytics</h1>
-      <EmployeeSummary />
-      <DepartmentChart />
-    </div>
+      <EmployeeSalaryChart />
+      <DepartmentCountChart />
+      <PerformanceSummaryChart />
     </div>
   );
 }
