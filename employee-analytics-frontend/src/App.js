@@ -12,13 +12,13 @@ import EmployeeSalaryChart from './components/EmployeeSummary';
 
 function App() {
   return (
-    <div>
+    <div className='container'>
       <Router>
       <div className="App">
         <h1>Employee Data Dashboard</h1>
         
         {/* Navigation Links */}
-        <nav>
+        <nav className='mb-5'>
           <ul>
             <li><Link to="/salary">Salary Summary</Link></li>
             <li><Link to="/performance">Performance</Link></li>
