@@ -1,42 +1,77 @@
-import React, { useEffect, useState } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { getEmployeeSummary } from '../api';
-// Register the necessary components
+import React, { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController, // Add this import for LineController
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register all necessary components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  LineController,  // Register LineController
   Title,
   Tooltip,
   Legend
 );
 
 function EmployeeSalaryChart() {
+  const [summary, setSummary] = useState({
+    avg_salary: 0,
+    max_salary: 0,
+    min_salary: 0
+  });
 
-  const [summary, setSummary] = useState({});
+  const chartRef = useRef(null); // 👈 Reference to the chart instance
+  const canvasRef = useRef(null); // 👈 Reference to the canvas element
 
   useEffect(() => {
-
     const fetchSummary = async () => {
-      const summaryData = await getEmployeeSummary();
-      setSummary(summaryData);
+      try {
+        const response = await axios.get('http://localhost:8000/api/summary/salary');
+        setSummary(response.data);
+      } catch (error) {
+        console.error('Error fetching salary summary:', error);
+      }
     };
+
     fetchSummary();
+  }, []);
 
-    const ctx = document.getElementById('salaryChart').getContext('2d');
+  useEffect(() => {
+    if (!canvasRef.current) return;
 
-    const salaryChart = new ChartJS(ctx, {
-      type: 'line',
+    // 💥 Destroy existing chart before creating a new one
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new ChartJS(ctx, {
+      type: 'line', // Type of chart
       data: {
-        labels: ['Alice', 'Bob', 'Carol', 'Dave'], // Example employee names
+        labels: ['Min Salary', 'Avg Salary', 'Max Salary'],
         datasets: [
           {
-            label: 'Salary',
-            data: [85000, 72000, 62000, 95000], // Example salary values
+            label: 'Salary ($)',
+            data: [
+              summary.min_salary,
+              summary.avg_salary,
+              summary.max_salary
+            ],
             fill: false,
             borderColor: 'rgba(75,192,192,1)',
-            tension: 0.1
+            backgroundColor: 'rgba(75,192,192,0.4)',
+            tension: 0.2
           }
         ]
       },
@@ -49,35 +84,32 @@ function EmployeeSalaryChart() {
           },
           tooltip: {
             callbacks: {
-              label: (tooltipItem) => {
-                return `Salary: $${tooltipItem.raw}`;
-              }
+              label: (tooltipItem) => `Salary: $${tooltipItem.raw}`
             }
           }
         }
       }
     });
 
-    // Cleanup the chart on component unmount
+    // Cleanup function to destroy the chart
     return () => {
-      salaryChart.destroy();
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
     };
-  }, []);
+  }, [summary]);
 
   return (
     <div>
-          <div>
       <h2>Salary Summary</h2>
       <p>Average Salary: ${summary.avg_salary}</p>
       <p>Max Salary: ${summary.max_salary}</p>
       <p>Min Salary: ${summary.min_salary}</p>
-    </div>
-    
-      <h2>Employee Salary Chart</h2>
-      <canvas id="salaryChart" width="400" height="200"></canvas>
+
+      <h2>Salary Comparison Chart</h2>
+      <canvas ref={canvasRef} width="400" height="200"></canvas>
     </div>
   );
 }
 
 export default EmployeeSalaryChart;
-

@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import React, { useEffect, useState, useRef } from 'react';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, BarController } from 'chart.js';
 import axios from 'axios';
 
+// Register necessary components from Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  BarElement,       // For bar chart
+  BarController,    // For bar chart controller
   Title,
   Tooltip,
   Legend
@@ -13,21 +15,31 @@ ChartJS.register(
 
 function SalaryDistributionChart() {
   const [salaryData, setSalaryData] = useState([]);
+  const chartRef = useRef(null);  // To store chart instance reference
+  const canvasRef = useRef(null); // To reference the canvas element
 
   useEffect(() => {
-    axios.get('/api/salary_distribution_by_department/')
+    // Fetch salary distribution data by department
+    axios.get('http://localhost:8000/api/salary-distribution/')
       .then(response => {
         setSalaryData(response.data);
       })
       .catch(error => {
-        console.log(error);
+        console.error(error);
       });
   }, []);
 
   useEffect(() => {
-    const ctx = document.getElementById('salaryDistributionChart').getContext('2d');
-    new ChartJS(ctx, {
-      type: 'bar',
+    if (!canvasRef.current) return;
+
+    // Destroy previous chart before creating a new one to avoid memory leaks or issues with canvas reuse
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new ChartJS(ctx, {
+      type: 'bar', // Bar chart type
       data: {
         labels: salaryData.map(department => department.department),
         datasets: [{
@@ -48,9 +60,21 @@ function SalaryDistributionChart() {
         }
       }
     });
+
+    // Cleanup function to destroy chart on component unmount
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
   }, [salaryData]);
 
-  return <canvas id="salaryDistributionChart" width="400" height="200"></canvas>;
+  return (
+    <div>
+      <h3>Salary Distribution by Department</h3>
+      <canvas ref={canvasRef} width="400" height="200"></canvas>
+    </div>
+  );
 }
 
 export default SalaryDistributionChart;

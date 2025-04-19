@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import React, { useEffect, useState, useRef } from 'react';
+import { Chart as ChartJS, CategoryScale, LinearScale, ArcElement, Title, Tooltip, Legend, PieController } from 'chart.js';
 import axios from 'axios';
 
+// Register necessary components from Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  ArcElement,      // Required for pie chart
+  PieController,   // Required for pie chart controller
   Title,
   Tooltip,
   Legend
@@ -13,21 +15,31 @@ ChartJS.register(
 
 function ActiveProjectsChart() {
   const [activeProjects, setActiveProjects] = useState(0);
+  const chartRef = useRef(null); // To store chart instance reference
+  const canvasRef = useRef(null); // To reference the canvas element
 
   useEffect(() => {
-    axios.get('/api/active_projects/')
+    // Fetch active project count data
+    axios.get('http://localhost:8000/api/active-projects/')
       .then(response => {
         setActiveProjects(response.data.active_projects);
       })
       .catch(error => {
-        console.log(error);
+        console.error(error);
       });
   }, []);
 
   useEffect(() => {
-    const ctx = document.getElementById('activeProjectsChart').getContext('2d');
-    new ChartJS(ctx, {
-      type: 'pie',
+    if (!canvasRef.current) return;
+
+    // Destroy previous chart before creating a new one to avoid memory leaks or issues with canvas reuse
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new ChartJS(ctx, {
+      type: 'pie', // Pie chart type
       data: {
         labels: ['Active Projects'],
         datasets: [{
@@ -48,9 +60,21 @@ function ActiveProjectsChart() {
         }
       }
     });
+
+    // Cleanup function to destroy chart on component unmount
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
   }, [activeProjects]);
 
-  return <canvas id="activeProjectsChart" width="400" height="200"></canvas>;
+  return (
+    <div>
+      <h3>Active Projects Summary</h3>
+      <canvas ref={canvasRef} width="400" height="200"></canvas>
+    </div>
+  );
 }
 
 export default ActiveProjectsChart;

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import axios from 'axios';
 
+// Register necessary components for the chart
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -13,9 +14,12 @@ ChartJS.register(
 
 function EmployeeProjectCountChart() {
   const [employeeProjectCount, setEmployeeProjectCount] = useState([]);
+  const chartRef = useRef(null);  // Ref to store the chart instance
+  const canvasRef = useRef(null); // Ref to store the canvas element
 
   useEffect(() => {
-    axios.get('/api/employee_and_project_count/')
+    // Fetch employee project count data
+    axios.get('http://localhost:8000/api/employee-project-count/')
       .then(response => {
         setEmployeeProjectCount(response.data);
       })
@@ -25,9 +29,17 @@ function EmployeeProjectCountChart() {
   }, []);
 
   useEffect(() => {
-    const ctx = document.getElementById('employeeProjectCountChart').getContext('2d');
-    new ChartJS(ctx, {
-      type: 'bar',
+    if (!canvasRef.current) return;
+
+    // Destroy previous chart before creating a new one
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    // Create a new bar chart with updated data
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new ChartJS(ctx, {
+      type: 'bar', // Bar chart type
       data: {
         labels: employeeProjectCount.map(employee => employee.name),
         datasets: [{
@@ -48,9 +60,21 @@ function EmployeeProjectCountChart() {
         }
       }
     });
-  }, [employeeProjectCount]);
 
-  return <canvas id="employeeProjectCountChart" width="400" height="200"></canvas>;
+    // Cleanup function to destroy chart on component unmount or data change
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, [employeeProjectCount]); // Re-run the effect when employeeProjectCount changes
+
+  return (
+    <div>
+      <h3>Employee Project Count Chart</h3>
+      <canvas ref={canvasRef} width="400" height="200"></canvas>
+    </div>
+  );
 }
 
 export default EmployeeProjectCountChart;

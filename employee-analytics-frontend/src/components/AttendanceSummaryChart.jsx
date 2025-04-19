@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import React, { useEffect, useState, useRef } from 'react';
+import { Chart as ChartJS, CategoryScale, LinearScale, PieElement, Title, Tooltip, Legend, ArcElement, PieController } from 'chart.js';
 import axios from 'axios';
 
+// Register necessary components from Chart.js
 ChartJS.register(
   CategoryScale,
-  LinearScale,
-  BarElement,
+  LinearScale,    
+  ArcElement,
+  PieController,     // For pie chart
   Title,
   Tooltip,
   Legend
@@ -13,21 +15,32 @@ ChartJS.register(
 
 function AttendanceSummaryChart() {
   const [attendanceData, setAttendanceData] = useState({});
+  const chartRef = useRef(null);  // To store chart instance reference
+  const canvasRef = useRef(null); // To reference the canvas element
 
   useEffect(() => {
-    axios.get('/api/attendance_summary/')
+    // Fetch attendance summary data
+    axios.get('http://localhost:8000/api/attendance-summary/')
       .then(response => {
         setAttendanceData(response.data);
       })
       .catch(error => {
-        console.log(error);
+        console.error(error);
       });
   }, []);
 
   useEffect(() => {
-    const ctx = document.getElementById('attendanceSummaryChart').getContext('2d');
-    new ChartJS(ctx, {
-      type: 'pie',
+    if (!canvasRef.current) return;
+
+    // Destroy previous chart before creating a new one
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    // Create a new pie chart with the updated data
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new ChartJS(ctx, {
+      type: 'pie', // Pie chart type
       data: {
         labels: ['Present', 'Absent', 'Leave'],
         datasets: [{
@@ -52,9 +65,21 @@ function AttendanceSummaryChart() {
         }
       }
     });
+
+    // Cleanup function to destroy chart on component unmount
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
   }, [attendanceData]);
 
-  return <canvas id="attendanceSummaryChart" width="400" height="200"></canvas>;
+  return (
+    <div>
+      <h3>Attendance Summary (Last 30 Days)</h3>
+      <canvas ref={canvasRef} width="400" height="200"></canvas>
+    </div>
+  );
 }
 
 export default AttendanceSummaryChart;
